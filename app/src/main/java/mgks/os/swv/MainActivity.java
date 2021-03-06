@@ -54,11 +54,14 @@ import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.GeolocationPermissions;
+import android.webkit.ServiceWorkerClient;
+import android.webkit.ServiceWorkerController;
 import android.webkit.SslErrorHandler;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -67,6 +70,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
@@ -89,6 +93,7 @@ import com.google.firebase.iid.FirebaseInstanceId;
 //import com.google.zxing.integration.android.IntentIntegrator;
 //import com.google.zxing.integration.android.IntentResult;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -138,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
 	public static int ASWV_FCM_ID           = aswm_fcm_id();
 	public static int ASWV_LAYOUT           = SmartWebView.ASWV_LAYOUT;
-	
+
 	// user agent variables
 	static boolean POSTFIX_USER_AGENT         = SmartWebView.POSTFIX_USER_AGENT;
 	static boolean OVERRIDE_USER_AGENT        = SmartWebView.OVERRIDE_USER_AGENT;
@@ -174,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
-			super.onActivityResult(requestCode, resultCode, intent);
+    	super.onActivityResult(requestCode, resultCode, intent);
 
         if (Build.VERSION.SDK_INT >= 21) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -215,6 +220,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 								results[i] = clipData.getItemAt(i).getUri();
 							}
 						} else {
+							try {
+								Bitmap cam_photo = (Bitmap) intent.getExtras().get("data");
+								ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+								cam_photo.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+								stringData = MediaStore.Images.Media.insertImage(this.getContentResolver(), cam_photo, null, null);
+							}catch (Exception ignored){}
 							results = new Uri[]{Uri.parse(stringData)};
 						}
 					}
@@ -241,6 +252,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 		// ------ PLAY AREA :: for debug purposes only ------ //
 
 		// ------- PLAY AREA END ------ //
+
+		// use Service Worker
+		if (Build.VERSION.SDK_INT >= 24) {
+			ServiceWorkerController swController = ServiceWorkerController.getInstance();
+			swController.setServiceWorkerClient(new ServiceWorkerClient() {
+				@Override
+				public WebResourceResponse shouldInterceptRequest(WebResourceRequest request) {
+				return null;
+				}
+			});
+		}
 
         // prevent app from being started again when it is still alive in the background
         if (!isTaskRoot()) {
@@ -623,6 +645,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
 			public boolean shouldOverrideUrlLoading(WebView view, String url) {
 				return false;
+			}
+
+			//use Service Worker
+			@Nullable
+			@Override
+			public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+				return super.shouldInterceptRequest(view, request);
 			}
 
 			@Override

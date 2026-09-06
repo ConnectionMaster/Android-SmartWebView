@@ -57,7 +57,7 @@ module.exports = {
   plugins: {
     ai: {
       projectId: "docmd_whm7cuhlmtpf5chg"
-    }
+    },
     // SEO Plugin Configuration
     // Most SEO data is pulled from page frontmatter (title, description, image, etc.)
     // These are fallbacks or site-wide settings.
